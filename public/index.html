@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCD-41 Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: #fff; text-align: center; padding: 20px; }
+        h1 { margin-bottom: 20px; }
+        .chart-container { 
+            position: relative; 
+            max-width: 900px; 
+            margin: 20px auto; 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>SCD-41 Sensor Charts</h1>
+
+    <div class="chart-container">
+        <canvas id="co2Chart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="envChart"></canvas>
+    </div>
+
+    <script>
+        // Setup Chart.js context and configuration
+        const co2Ctx = document.getElementById('co2Chart').getContext('2d');
+        const envCtx = document.getElementById('envChart').getContext('2d');
+
+        const co2Chart = new Chart(co2Ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CO₂ (ppm)',
+                    data: [],
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { title: { display: true, text: 'CO₂ Concentration (PPM)', color: '#fff' } },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#333' } }
+                }
+            }
+        });
+
+        const envChart = new Chart(envCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Temperature (°F)',
+                        data: [],
+                        borderColor: '#ff9800',
+                        borderWidth: 2,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: '#2196f3',
+                        borderWidth: 2,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { title: { display: true, text: 'Temperature & Humidity', color: '#fff' } },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#333' } }
+                }
+            }
+        });
+
+        // Function to fetch history and update line graphs
+        async function updateCharts() {
+            try {
+                const response = await fetch('/api/history');
+                const history = await response.json();
+
+                if (history.length === 0) return;
+
+                const labels = history.map(item => item.timestamp);
+                const co2Data = history.map(item => item.co2);
+                const tempData = history.map(item => item.temp_f);
+                const humidityData = history.map(item => item.humidity);
+
+                // Update CO2 Chart
+                co2Chart.data.labels = labels;
+                co2Chart.data.datasets[0].data = co2Data;
+                co2Chart.update();
+
+                // Update Temp/Humidity Chart
+                envChart.data.labels = labels;
+                envChart.data.datasets[0].data = tempData;
+                envChart.data.datasets[1].data = humidityData;
+                envChart.update();
+
+            } catch (err) {
+                console.error("Error fetching chart data:", err);
+            }
+        }
+
+        // Poll every 3 seconds for new data points
+        setInterval(updateCharts, 30000);
+        updateCharts();
+    </script>
+</body>
+</html>

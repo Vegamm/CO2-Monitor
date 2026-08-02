@@ -1,0 +1,14 @@
+{
+  "name": "co2monitor",
+  "version": "1.0.0",
+  "description": "webpage to display co2 data sent by a separate localized scd-41 device.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mitchell Vega",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
