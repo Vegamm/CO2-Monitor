@@ -3,12 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCD-41 Dashboard</title>
+    <title>SCD-41 Live Chart Dashboard</title>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: #fff; text-align: center; padding: 20px; }
-        h1 { margin-bottom: 20px; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: #121212; 
+            color: #fff; 
+            text-align: center; 
+            padding: 20px; 
+        }
+        h1 { margin-bottom: 10px; }
+        
+        .controls {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            background: #1e1e1e;
+            padding: 12px 20px;
+            border-radius: 8px;
+            max-width: 900px;
+        }
+        .controls label { font-size: 0.95rem; color: #ccc; }
+        .controls select {
+            background: #2b2b2b;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            outline: none;
+        }
+        .controls select:hover { border-color: #666; }
+
         .chart-container { 
             position: relative; 
             max-width: 900px; 
@@ -21,7 +52,18 @@
     </style>
 </head>
 <body>
-    <h1>SCD-41 Sensor Charts</h1>
+    <h1>SCD-41 Live Sensor Dashboard</h1>
+
+    <div class="controls">
+        <label for="timeRange">Time Range:</label>
+        <select id="timeRange" onchange="updateCharts()">
+            <option value="30">Last 15 Minutes (30 points)</option>
+            <option value="120" selected>Last 1 Hour (120 points)</option>
+            <option value="720">Last 6 Hours (720 points)</option>
+            <option value="1440">Last 12 Hours (1,440 points)</option>
+            <option value="2880">Last 24 Hours (All 2,880 points)</option>
+        </select>
+    </div>
 
     <div class="chart-container">
         <canvas id="co2Chart"></canvas>
@@ -32,7 +74,6 @@
     </div>
 
     <script>
-        // Setup Chart.js context and configuration
         const co2Ctx = document.getElementById('co2Chart').getContext('2d');
         const envCtx = document.getElementById('envChart').getContext('2d');
 
@@ -46,15 +87,17 @@
                     borderColor: '#4caf50',
                     backgroundColor: 'rgba(76, 175, 80, 0.1)',
                     borderWidth: 2,
+                    pointRadius: 1,
                     fill: true,
-                    tension: 0.3
+                    tension: 0.2
                 }]
             },
             options: {
                 responsive: true,
+                animation: false,
                 plugins: { title: { display: true, text: 'CO₂ Concentration (PPM)', color: '#fff' } },
                 scales: {
-                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    x: { ticks: { color: '#888', maxTicksLimit: 12 }, grid: { color: '#333' } },
                     y: { ticks: { color: '#888' }, grid: { color: '#333' } }
                 }
             }
@@ -70,57 +113,59 @@
                         data: [],
                         borderColor: '#ff9800',
                         borderWidth: 2,
-                        tension: 0.3
+                        pointRadius: 1,
+                        tension: 0.2
                     },
                     {
                         label: 'Humidity (%)',
                         data: [],
                         borderColor: '#2196f3',
                         borderWidth: 2,
-                        tension: 0.3
+                        pointRadius: 1,
+                        tension: 0.2
                     }
                 ]
             },
             options: {
                 responsive: true,
+                animation: false,
                 plugins: { title: { display: true, text: 'Temperature & Humidity', color: '#fff' } },
                 scales: {
-                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    x: { ticks: { color: '#888', maxTicksLimit: 12 }, grid: { color: '#333' } },
                     y: { ticks: { color: '#888' }, grid: { color: '#333' } }
                 }
             }
         });
 
-        // Function to fetch history and update line graphs
         async function updateCharts() {
             try {
                 const response = await fetch('/api/history');
                 const history = await response.json();
 
-                if (history.length === 0) return;
+                if (!history || history.length === 0) return;
 
-                const labels = history.map(item => item.timestamp);
-                const co2Data = history.map(item => item.co2);
-                const tempData = history.map(item => item.temp_f);
-                const humidityData = history.map(item => item.humidity);
+                const pointsToDisplay = parseInt(document.getElementById('timeRange').value, 10);
+                const slicedHistory = history.slice(-pointsToDisplay);
 
-                // Update CO2 Chart
+                const labels = slicedHistory.map(item => item.timestamp);
+                const co2Data = slicedHistory.map(item => item.co2);
+                const tempData = slicedHistory.map(item => item.temp_f); // Updated key
+                const humidityData = slicedHistory.map(item => item.humidity);
+
                 co2Chart.data.labels = labels;
                 co2Chart.data.datasets[0].data = co2Data;
                 co2Chart.update();
 
-                // Update Temp/Humidity Chart
                 envChart.data.labels = labels;
                 envChart.data.datasets[0].data = tempData;
                 envChart.data.datasets[1].data = humidityData;
                 envChart.update();
 
             } catch (err) {
-                console.error("Error fetching chart data:", err);
+                console.error("Error updating charts:", err);
             }
         }
 
-        // Poll every 3 seconds for new data points
         setInterval(updateCharts, 30000);
         updateCharts();
     </script>
