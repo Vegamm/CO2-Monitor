@@ -7,12 +7,12 @@ The system continuously samples $CO_2$, temperature, and relative humidity every
 ---
 
 1. **Python Service (`co2monitor.py`)**: Interfaces with the SCD-41 via $I^2C$, reads $CO_2$, temperature, and humidity every 30 seconds, and posts readings to the Express backend.
-2. **Express Server (`index.js`)**: Receives data payloads, maintains a rolling 2880-point (1 day) historical log in memory, and serves the static frontend.
+2. **Express Server (`index.js`)**: Receives data payloads, maintains a rolling 2880-point (1 day) historical log, and serves the static frontend.
 3. **Web Dashboard (`public/index.html`)**: Fetches data history from the API and dynamically updates interactive line graphs every 30 seconds.
 
 ### Prerequisites
 
-* Node.js (v14+)
+* Node.js (v22+)
 * Python 3.x
 
 ### How to get started
